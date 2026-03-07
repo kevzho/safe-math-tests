@@ -6,8 +6,8 @@ Kotlin experiments for making `SafeMath` runtime failures explicit in types so i
 
 Build and compare two approaches:
 
-1. `SafeMathResult` (result-pattern): traditional typed result wrappers.
-2. `SafeMathRich` (rich-errors): richer typed error modeling using Kotlin 2.4 beta/dev features.
+1. **`SafeMathResult` (result-pattern)**: traditional typed result wrappers.
+2. **`SafeMathRich` (rich-errors)** (⚠️ **currently non-functional**): intended to explore richer typed error modeling using Kotlin 2.4 beta/dev features.
 
 Design constraints across both:
 
@@ -18,64 +18,103 @@ Design constraints across both:
 
 ## Repository Layout
 
-- `result-pattern/`: stable Kotlin approach (`SafeMathResult`).
-- `rich-errors/`: Kotlin 2.4 beta/dev approach (`SafeMathRich`).
+- `result-pattern/`: **Working** stable Kotlin approach (`SafeMathResult`) with comprehensive tests.
+- `rich-errors/`: ⚠️ **BROKEN/EXPERIMENTAL** - Kotlin 2.4 beta/dev approach (`SafeMathRich`). Currently non-functional due to compiler instability.
 
-## Approach 1: SafeMathResult (Result Pattern)
+## Approach 1: SafeMathResult (Working)
 
-Use a sealed result type and force callers to handle success/error branches.
+A stable implementation using a sealed result type that forces callers to handle success/error branches.
+
+### Key Features
+
+- **Result Type**: Custom `Result<T, E>` sealed interface with `Ok` and `Err` subtypes
+- **NonZeroInt**: Value class guaranteeing non-zero integers at compile time
+- **No Nullable Returns**: Math operations never return null
+- **No Exceptions**: Expected failures returned as values
+- **Exhaustive Handling**: `match` function forces handling both cases
+- **Comprehensive Tests**: Full test coverage for all scenarios
+
+### Code Example
 
 ```kotlin
-sealed interface Result<out T, out E> {
-    data class Ok<T>(val value: T) : Result<T, Nothing>
-    data class Err<E>(val error: E) : Result<Nothing, E>
-}
+val math = SafeMath()
+val result = math.safeDivide(10, 2)
 
-@JvmInline
-value class NonZeroInt private constructor(private val n: Int) {
-    companion object {
-        fun from(i: Int): Result<NonZeroInt, NonZeroInputError> =
-            if (i != 0) Result.Ok(NonZeroInt(i))
-            else Result.Err(NonZeroInputError.WasZero)
-    }
-}
+result.match(
+    onOk = { quotient -> println("Result: $quotient") },
+    onErr = { error -> println("Error: $error") }
+)
 ```
 
-This keeps divide-by-zero impossible once `NonZeroInt` is obtained.
+### Test Coverage
 
-## Approach 2: SafeMathRich (Rich Errors Library Style)
+- NonZeroInt creation (positive, negative, zero)
+- Division operations (valid, zero, negative)
+- Modulo operations
+- Match function behavior
+- Edge cases (Int.MAX/MIN_VALUE)
+- Division property verification
 
-Use richer error-domain typing and Kotlin 2.4 beta/dev compiler features to model error flows more precisely than plain string errors.
+### Running
 
-Target use case:
+```bash
+# Build and test
+./gradlew :result-pattern:build
+./gradlew :result-pattern:test
 
-- Library-first API (`SafeMathRich`) plus example code.
-- Example usage first, then underlying classes/types.
-- Borrow ergonomic patterns from Kotlin unit-test style examples.
+# Run
+cd result-pattern
+kotlinc src/main/kotlin/safe-math.kt -include-runtime -d safemath.jar
+java -jar safemath.jar
+```
 
-## Kotlin 2.4 Beta/Dev Source (Recorded)
+## Approach 2: SafeMathRich ⚠️ (Broken - Do Not Use)
 
-Beta/dev Kotlin artifacts are sourced from JetBrains Team packages:
+**Status:** Currently non-functional. This approach attempted to use Kotlin 2.4 beta/dev features for richer error-domain typing, but the compiler is too unstable for practical use.
 
-- https://packages.jetbrains.team/maven/p/kt/dev/org/jetbrains/kotlin/kotlin-stdlib/
+### Issues Encountered
 
-Current repository wiring:
+- Kotlin 2.4.0-dev builds are highly unstable
+- Compiler crashes during incremental compilation
+- Incompatible with standard tooling
+- No stable API guarantees
 
-- `settings.gradle.kts` includes `https://packages.jetbrains.team/maven/p/kt/dev` in plugin + dependency repositories.
-- `rich-errors/build.gradle.kts` uses `org.jetbrains.kotlin.jvm` and stdlib/test at `2.4.0-dev-5318`.
+### Historical Context
 
-## Development
+The intended goal was to explore:
+
+- Library-first API design
+- Richer error-domain typing beyond simple sealed hierarchies
+- Ergonomics inspired by Kotlin unit-test style examples
+
+### Current Status
+
+This module is preserved only for reference. Do not attempt to build or run it — it will fail with compiler errors.
+
+## Development Status Summary
+
+| Module | Status | Kotlin Version | Test Coverage |
+|---|---|---|---|
+| `result-pattern/` | Working | 2.2.21 (stable) | Full |
+| `rich-errors/` | Broken | 2.4.0-dev (unstable) | None |
+
+## Running Working Code
 
 From repo root:
 
 ```bash
-cd safe-math-tests
-./gradlew tasks
-```
-
-Build a specific approach:
-
-```bash
+# Build the working module only
 ./gradlew :result-pattern:build
-./gradlew :rich-errors:build
+
+# Run tests for working module
+./gradlew :result-pattern:test
+
+# View test report
+open result-pattern/build/reports/tests/test/index.html
 ```
+
+## Requirements for Working Module
+
+- Kotlin 2.2.21 or higher
+- Java 17 or higher
+- Gradle

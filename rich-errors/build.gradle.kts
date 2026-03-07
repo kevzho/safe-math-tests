@@ -1,5 +1,5 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.4.0-dev-5318" // specific dev version
+    id("org.jetbrains.kotlin.jvm") version "2.4.0-dev-5471" // specific dev version
 }
 
 repositories {
@@ -7,16 +7,41 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.4.0-dev-5318")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0-dev-5318")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.4.0-dev-5471")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0-dev-5471")
 }
 
 kotlin {
-    sourceSets.all {
-        languageSettings {
-            enableLanguageFeature("UnionTypes") // union types for rich error support
-        }
+    jvmToolchain(17)
+    
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xenable-union-types",
+            "-Xrich-errors"
+        )
     }
     
-    jvmToolchain(17)
+    sourceSets.all {
+        languageSettings {
+            progressiveMode = true
+        }
+    }
+}
+
+tasks.register<JavaExec>("run") {
+    group = "application"
+    mainClass.set("safemath.rich.UnionTestKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+    
+    // Redirect error output to standard output
+    errorOutput = System.out
+    
+    // Or capture both to a file
+    // standardOutput = file("build/run-output.txt").outputStream()
+    // errorOutput = file("build/run-error.txt").outputStream()
+    
+    doFirst {
+        println("Running with classpath:")
+        classpath.files.forEach { println("  $it") }
+    }
 }
