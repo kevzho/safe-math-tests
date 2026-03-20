@@ -26,7 +26,7 @@ tasks.test {
 }
 
 application {
-    mainClass.set("SafeMathKt")
+    mainClass.set("org.example.zeineb.SafeMath_ZeinebKt")
 }
 
 tasks.named<JavaExec>("run") {
@@ -34,5 +34,5 @@ tasks.named<JavaExec>("run") {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
